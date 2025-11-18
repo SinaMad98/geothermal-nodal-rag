@@ -1,0 +1,63 @@
+﻿system:
+  name: Geothermal RAG v5
+  version: '5.0'
+
+ollama:
+  host: http://localhost:11434
+  model_chat: qwen2.5:7b
+  model_extraction: qwen2.5:3b
+  model_judge: qwen2.5:3b
+  embedding_model: nomic-embed-text
+  timeout: 1200
+
+embedding_strategies:
+  factual_qa:
+    chunk_size: 350
+    chunk_overlap: 120
+    collection: geo_factual
+  technical_extraction:
+    chunk_size: 1500              # INCREASED for trajectory tables
+    chunk_overlap: 300
+    collection: geo_technical
+  summary:
+    chunk_size: 1200
+    chunk_overlap: 300
+    collection: geo_summary
+
+vector_store:
+  path: ./data/vector_store_v5     # New version
+
+agents:
+  rag_retrieval:
+    top_k_factual: 10
+    top_k_technical: 20             # INCREASED for extraction
+    top_k_extract: 20
+    top_k_summary: 15               # INCREASED for better summaries
+    hybrid_weight_semantic: 0.65
+    hybrid_weight_keyword: 0.35
+  
+  extraction:
+    use_llm_validation: true
+    confidence_threshold: 0.7       # Lowered for more leniency
+    enable_llm_fallback: true       # NEW: Use LLM if regex fails
+  
+  judge:
+    validation_model: qwen2.5:3b
+    ensemble_models:                # NEW: Ensemble validation
+      - qwen2.5:3b
+      - qwen2.5:7b
+    min_confidence: 0.70            # Increased (ensemble is stricter)
+    max_retries: 2
+    strict_numbers: true
+    use_ensemble: true              # NEW: Enable ensemble
+
+  memory:
+    buffer_size: 6
+    enable_well_context: true
+
+  preprocessing:
+    enable_semantic_chunking: true
+    detect_sections: true
+    detect_tables: true
+    chunk_on_boundaries: true
+    table_extraction_priority: high  # NEW: Prioritize tables
